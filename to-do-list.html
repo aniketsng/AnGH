@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo List App</title>
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        background-color: #f5f5f5;
+        margin: 0;
+        padding: 0;
+    }
+    .container {
+        width: 600px;
+        height: 650px;
+        margin: 50px auto;
+        background-color: #fff;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        padding: 38px;
+        overflow-y: auto;
+    }
+    h1 {
+        text-align: center;
+        color: #333;
+    }
+    input[type="text"] {
+        width: calc(93% - 93px); /* Adjusted width */
+        padding: 10px;
+        border: 2px solid #ccc;
+        border-radius: 2px;
+        margin-bottom: 20px;
+        font-size: 16px;
+    }
+    button {
+        padding: 10px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-size: 16px;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+    .task-list {
+        max-height: 500px;
+        overflow-y: auto;
+        position: relative;
+    }
+    .task-list::-webkit-scrollbar {
+        width: 0px;
+    }
+    .task-list::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    .task-list::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+    .task-list::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+    ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+    li {
+        background-color: #f9f9f9;
+        padding: 15px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        border: 1px solid #ccc;
+        display: flex;
+        align-items: center;
+    }
+    li input[type="checkbox"] {
+        margin-right: 10px;
+        width: 20px;
+        height: 20px;
+    }
+    .task-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+    }
+    .task-text {
+        margin: 0;
+        font-size: 16px;
+    }
+    .completed {
+        text-decoration: line-through;
+        opacity: 0.5;
+    }
+    .delete-btn {
+        background-color: #f44336;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 14px;
+    }
+    .delete-btn-container {
+        margin-left: 10px;
+    }
+    .checkbox-container {
+        margin-right: 10px;
+    }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Todo List</h1>
+    <input type="text" id="taskInput" placeholder="Enter a new task" onkeydown="if(event.keyCode==13) addTask()">
+    <button onclick="addTask()">Add Task</button>
+    <div class="task-list">
+        <ul id="taskList"></ul>
+    </div>
+</div>
+
+<script>
+    // Retrieve tasks from localStorage on page load
+    window.onload = function() {
+        loadTasksFromLocalStorage();
+        // Focus on the task input field
+        document.getElementById("taskInput").focus();
+    };
+
+    // Function to add a new task
+    function addTask() {
+        var taskInput = document.getElementById("taskInput");
+        var taskText = taskInput.value.trim();
+
+        if (taskText !== "") {
+            addTaskToList(taskText);
+
+            // Save tasks to localStorage
+            saveTasksToLocalStorage();
+
+            taskInput.value = "";
+        } else {
+            alert("Please enter a task!");
+        }
+    }
+
+    // Function to add task to the list
+    function addTaskToList(taskText) {
+        var taskList = document.getElementById("taskList");
+        var newTask = document.createElement("li");
+
+        var taskContainer = document.createElement("div");
+        taskContainer.classList.add("task-container");
+
+        var checkboxContainer = document.createElement("div");
+        checkboxContainer.classList.add("checkbox-container");
+
+        var checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.onchange = function() {
+            newTask.classList.toggle("completed", this.checked);
+            blurFocusedElement();
+            saveTasksToLocalStorage();
+        };
+        checkboxContainer.appendChild(checkbox);
+
+        var taskTextElement = document.createElement("span");
+        taskTextElement.textContent = taskText;
+        taskTextElement.className = "task-text"; // Adding a class for styling
+        taskContainer.appendChild(taskTextElement);
+
+        newTask.appendChild(checkboxContainer);
+        newTask.appendChild(taskContainer);
+
+        var deleteButtonContainer = document.createElement("div");
+        deleteButtonContainer.classList.add("delete-btn-container");
+
+        var deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.className = "delete-btn";
+        deleteButton.onclick = function(event) {
+            deleteTask(newTask);
+            event.stopPropagation(); // Prevent checkbox event from bubbling up to the li element
+        };
+        deleteButtonContainer.appendChild(deleteButton);
+
+        newTask.appendChild(deleteButtonContainer);
+
+        // Insert new task at the beginning of the list
+        taskList.insertBefore(newTask, taskList.childNodes[0]);
+    }
+
+    // Function to delete a task
+    function deleteTask(task) {
+        var taskList = document.getElementById("taskList");
+        taskList.removeChild(task);
+        saveTasksToLocalStorage();
+    }
+
+    // Function to blur the focused element
+    function blurFocusedElement() {
+        document.activeElement.blur();
+    }
+
+    // Function to save tasks to localStorage
+    function saveTasksToLocalStorage() {
+        var taskList = document.getElementById("taskList");
+        var tasks = [];
+        taskList.childNodes.forEach(function(task) {
+            if (task.tagName === "LI") {
+                var taskText = task.querySelector(".task-text").textContent;
+                var isCompleted = task.classList.contains("completed");
+                tasks.push({ text: taskText, completed: isCompleted });
+            }
+        });
+        localStorage.setItem("tasks", JSON.stringify(tasks));
+    }
+
+    // Function to load tasks from localStorage
+    function loadTasksFromLocalStorage() {
+        var savedTasks = JSON.parse(localStorage.getItem("tasks"));
+        if (savedTasks) {
+            savedTasks.forEach(function(task) {
+                addTaskToList(task.text);
+                if (task.completed) {
+                    document.querySelector(".task-container:first-child input[type='checkbox']").checked = true;
+                }
+            });
+        }
+    }
+</script>
+</body>
+</html>
